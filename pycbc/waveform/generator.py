@@ -27,6 +27,7 @@ This modules provides classes for generating waveforms.
 
 import waveform
 import ringdown
+import supernovae
 from pycbc import filter
 from pycbc import transforms
 from pycbc.types import TimeSeries
@@ -398,6 +399,15 @@ class TDomainFreqTauRingdownGenerator(BaseGenerator):
         super(TDomainFreqTauRingdownGenerator, self).__init__(ringdown.get_td_from_freqtau,
             variable_args=variable_args, **frozen_params)
 
+class TDomainSupernovaeGenerator(BaseGenerator):
+    """Uses supernovae.py to create time domain core-collapse supernovae waveforms
+    using a set of Principal Components provided in a .hdf file. 
+
+    """
+    def __init__(self, variable_args=(), frozen_params):
+        super(TDomainSupernovaeGenerator, self).__init__(supernovae.get_td_ccsn, 
+            variable_args=variable_args, **frozen_params)
+
 class FDomainDetFrameGenerator(object):
     """Generates frequency-domain waveform in a specific frame.
 
@@ -642,6 +652,10 @@ def select_waveform_generator(approximant):
             return TDomainMassSpinRingdownGenerator
         elif approximant == 'TdQNMfromFreqTau':
             return TDomainFreqTauRingdownGenerator
+
+    # check if supernovae waveform:
+    elif approximant == 'supernovae':
+        return TDomainSupernovaeGenerator
 
     # otherwise waveform approximant is not supported
     else:
