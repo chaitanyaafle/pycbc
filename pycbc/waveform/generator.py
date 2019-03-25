@@ -405,7 +405,7 @@ class TDomainSupernovaeGenerator(BaseGenerator):
 
     """
     def __init__(self, variable_args=(), frozen_params):
-        super(TDomainSupernovaeGenerator, self).__init__(supernovae.get_td_ccsn, 
+        super(TDomainSupernovaeGenerator, self).__init__(supernovae.get_td_corecollapse_bounce_signal, 
             variable_args=variable_args, **frozen_params)
 
 class FDomainDetFrameGenerator(object):
@@ -654,8 +654,9 @@ def select_waveform_generator(approximant):
             return TDomainFreqTauRingdownGenerator
 
     # check if supernovae waveform:
-    elif approximant == 'supernovae':
-        return TDomainSupernovaeGenerator
+    elif approximant in supernovae.supernovae_td_approximants:
+        if approximant == 'CoreCollapseBounce':
+            return TDomainSupernovaeGenerator
 
     # otherwise waveform approximant is not supported
     else:
