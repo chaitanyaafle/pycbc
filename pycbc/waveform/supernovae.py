@@ -6,9 +6,9 @@ import h5py
 from pycbc.types import TimeSeries, FrequencySeries, float64, complex128, zeros
 from pycbc.waveform.waveform import get_obj_attrs
 
-def get_td_corecollapse_bounce_signal(template=None, coefficients_array, 
-                                      pc_hdf_file, **kwargs):
-    """
+def get_td_corecollapse_bounce_signal(coefficients_array, pc_hdf_file, 
+                                      template=None, **kwargs):
+    """generates CCSNe waveform
     """
     pc_file = h5py.File(pc_hdf_file, 'r')
     principal_components = numpy.array(pc_file.get('principal_components'))
