@@ -13,7 +13,7 @@ def get_td_corecollapse_bounce_signal(coefficients_array, pc_hdf_file,
     pc_file = h5py.File(pc_hdf_file, 'r')
     principal_components = numpy.array(pc_file.get('principal_components'))
 
-    strain = numpy.dot(coefficient_array, pc_test)
+    strain = numpy.dot(coefficients_array, pc_test)
     return strain
 
 # Approximant names ###########################################################
