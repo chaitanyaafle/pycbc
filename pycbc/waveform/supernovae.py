@@ -19,7 +19,7 @@ def get_td_corecollapse_bounce_signal(template=None, **kwargs):
     if 'principal_components' in kwargs:
         principal_components = kwargs['principal_components']
 
-    pc_len = len(principal_components)
+    
     
     if 'coefficients_array' in kwargs:
         coefficients_array = kwargs['coefficients_array']
@@ -28,6 +28,13 @@ def get_td_corecollapse_bounce_signal(template=None, **kwargs):
         coeffs_keys = numpy.sort(numpy.array(coeffs_keys))
         coefficients_array = numpy.array([kwargs[x] for x in coeffs_keys])
 
+    
+    no_of_pcs = int(kwargs['no_of_pcs'])
+    
+    coefficients_array = coefficients_array[:no_of_pcs]
+    principal_components = principal_components[:no_of_pcs]
+
+    pc_len = len(principal_components)
     assert len(coefficients_array) == pc_len
 
     distance = kwargs['distance']
