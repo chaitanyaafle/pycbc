@@ -20,6 +20,7 @@ import logging
 from ConfigParser import NoSectionError, NoOptionError
 
 import numpy
+import h5py
 
 from pycbc import filter as pyfilter
 from pycbc.waveform import NoWaveformError
@@ -215,8 +216,8 @@ class GaussianNoise(BaseDataModel):
     name = 'gaussian_noise'
 
     def __init__(self, variable_params, data, low_frequency_cutoff, psds=None,
-                 high_frequency_cutoff=None, norm=None, static_params=None,
-                 **kwargs):
+                 high_frequency_cutoff=None, norm=None, static_params=None, 
+                 principal_components=None, **kwargs):
         # set up the boiler-plate attributes
         super(GaussianNoise, self).__init__(variable_params, data,
                                             static_params=static_params,
@@ -254,7 +255,9 @@ class GaussianNoise(BaseDataModel):
             self._weight = {det: Array(numpy.sqrt(norm/psds[det]))
                             for det in data}
             numpy.seterr(**numpysettings)
-        # whiten the data
+        # For supernovae waveforms
+        self.principal_components = principal_components
+        # whiten  the data
         for det in self._data:
             self._data[det][kmin:kmax] *= self._weight[det][kmin:kmax]
 
@@ -327,6 +330,11 @@ class GaussianNoise(BaseDataModel):
             The value of the log likelihood ratio.
         """
         params = self.current_params
+
+        # Add principal components as parameters for supernovae waveforms
+        if self.principal_components is not None:
+            params['principal_components'] = self.principal_components
+
         try:
             wfs = self._waveform_generator.generate(**params)
         except NoWaveformError:
@@ -483,8 +491,16 @@ class GaussianNoise(BaseDataModel):
         args = cls._init_args_from_config(cp)
         args['low_frequency_cutoff'] = low_frequency_cutoff_from_config(cp)
         args['high_frequency_cutoff'] = high_frequency_cutoff_from_config(cp)
+
+        # Read in the principal components for supernovae waveforms:
+        if cp.has_option('model', 'principal_components_file'):
+            pc_file = h5py.File(cp.get('model', 'principal_components_file'), 'r')
+            principal_components = numpy.array(pc_file.get('principal_components'))
+            args['principal_components'] = principal_components
+
         # get any other keyword arguments provided in the model section
-        ignore_args = ['name', 'low-frequency-cutoff', 'high-frequency-cutoff']
+        ignore_args = ['name', 'low-frequency-cutoff', 
+                       'high-frequency-cutoff', 'principal_components_file']
         args.update(cls.extra_args_from_config(cp, "model",
                                                skip_args=ignore_args))
         args.update(kwargs)
