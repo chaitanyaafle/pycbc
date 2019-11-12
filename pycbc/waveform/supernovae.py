@@ -2,6 +2,7 @@
 """
 
 import numpy
+import math
 import h5py
 from pycbc.types import TimeSeries, FrequencySeries, float64, complex128, zeros
 from pycbc.waveform.waveform import get_obj_attrs
@@ -11,9 +12,19 @@ def get_td_corecollapse_bounce_signal(template=None, **kwargs):
     """generates CCSNe waveform
     """
     
+    # eos_dict = dict({0:'SFHo', 1:'SFHx', 2:'LS180', 3:'HSIUF', 
+    #                  4:'LS220', 5:'GSHenFSU2.1', 6:'GShenFSU1.7', 
+    #                  7:'LS375', 8:'HSTMA', 9:'HSFSG', 10:'HSDD2', 
+    #                  11:'BHBL', 12:'BHBLP', 13:'all_eos'})
+
+    # eos_index = math.floor(numpy.float(kwargs['eos_index']))
+
     # check if a hdf file with principal components is provided as an arg:
     if 'pc_hdf_file' in kwargs:
         pc_file = h5py.File(kwargs['pc_hdf_file'], 'r')
+        # eos_name = pc_file.get(eos_dict[eos_index])
+        # eos_data = pc_file.get(eos_name)
+        # principal_components = numpy.array(eos_data.get('principal_components'))
         principal_components = numpy.array(pc_file.get('principal_components'))
 
     if 'principal_components' in kwargs:
@@ -27,6 +38,7 @@ def get_td_corecollapse_bounce_signal(template=None, **kwargs):
         coeffs_keys = [x for x in kwargs if x.startswith('coeff_')]
         coeffs_keys = numpy.sort(numpy.array(coeffs_keys))
         coefficients_array = numpy.array([kwargs[x] for x in coeffs_keys])
+
 
     
     no_of_pcs = int(kwargs['no_of_pcs'])

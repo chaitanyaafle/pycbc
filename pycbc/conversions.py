@@ -33,6 +33,7 @@ import copy
 import numpy
 import lal
 import lalsimulation as lalsim
+import h5py
 from pycbc.detector import Detector
 
 from .coordinates import spherical_to_cartesian as _spherical_to_cartesian
@@ -1255,6 +1256,46 @@ def nltides_gw_phase_diff_isco(f_low, f0, amplitude, n, m1, m2):
     return formatreturn(phi_i - phi_l, input_is_array)
 
 
+#
+# =============================================================================
+#
+#                           Supernovae functions
+#
+# =============================================================================
+#
+
+
+def beta_from_alpha_0_from_pc_file(alpha_0_input, pc_file):
+    """Returns the beta value for the corresponding coefficient
+    of the first Principal Component (alpha_0) interpolating 
+    from the beta-alpha_0 data in the .hdf file containing PC data.
+    """
+    datafile = h5py.File(pc_file, 'r')
+    betas = numpy.array(datafile.get('betas'))
+    coefficients = datafile.get('coefficients')
+    alphas = coefficients[:,0]
+    z = numpy.polyfit(betas, alphas, 1)
+    output_betas = numpy.interp(alpha_0_input, z[0]*betas+z[1], betas)
+
+    return output_betas
+
+
+def beta_from_alpha_1_from_pc_file(alpha_1_input, pc_file):
+    """Returns the beta value for the corresponding coefficient
+    of the second Principal Component (alpha_1) interpolating 
+    from the beta-alpha_1 data in the .hdf file containing PC data.
+    """
+    datafile = h5py.File(pc_file, 'r')
+    betas = numpy.array(datafile.get('betas'))
+    coefficients = datafile.get('coefficients')
+    alphas = coefficients[:,1]
+    z = numpy.polyfit(betas, alphas, 1)
+    output_betas = numpy.interp(alpha_1_input, z[0]*betas+z[1], betas)
+
+    return output_betas
+
+
+
 __all__ = ['dquadmon_from_lambda', 'lambda_tilde', 'primary_mass',
            'secondary_mass', 'mtotal_from_mass1_mass2',
            'q_from_mass1_mass2', 'invq_from_mass1_mass2',
@@ -1286,5 +1327,6 @@ __all__ = ['dquadmon_from_lambda', 'lambda_tilde', 'primary_mass',
            'final_spin_from_f0_tau', 'final_mass_from_f0_tau',
            'optimal_dec_from_detector', 'optimal_ra_from_detector',
            'chi_eff_from_spherical', 'chi_p_from_spherical',
-           'nltides_gw_phase_diff_isco',
+           'nltides_gw_phase_diff_isco', 'beta_from_alpha_0_from_pc_file',
+           'beta_from_alpha_1_from_pc_file',
           ]
