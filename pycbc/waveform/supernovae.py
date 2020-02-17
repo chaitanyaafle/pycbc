@@ -39,8 +39,10 @@ def get_td_corecollapse_bounce_signal(template=None, **kwargs):
         coeffs_keys = numpy.sort(numpy.array(coeffs_keys))
         coefficients_array = numpy.array([kwargs[x] for x in coeffs_keys])
 
-
-    
+    if 'tc' in kwargs:
+        print 'tc is being passed here'
+        t_bounce = kwargs['tc']
+        
     no_of_pcs = int(kwargs['no_of_pcs'])
     
     coefficients_array = coefficients_array[:no_of_pcs]
@@ -50,7 +52,7 @@ def get_td_corecollapse_bounce_signal(template=None, **kwargs):
     assert len(coefficients_array) == pc_len
 
     distance = kwargs['distance']
-    mpc_conversion = 3.086e+22
+    mpc_conversion = 3.08567758128e+22
     distance *=  mpc_conversion
 
     wf = numpy.dot(coefficients_array, principal_components) / distance
@@ -58,11 +60,13 @@ def get_td_corecollapse_bounce_signal(template=None, **kwargs):
     delta_t = kwargs['delta_t']
     outhp = TimeSeries(wf, delta_t=delta_t)
     outhc = TimeSeries(numpy.zeros(len(wf)), delta_t=delta_t)
-
+    
+#    outhp.start_time = t_bounce - 0.5
+#    print "tstart from the supernovae.py code: ", outhp.start_time
     # returning the same output for hp, hc as 2D waveforms don't have 
     # polarization info
     
-    return outhp, outhp
+    return outhp, outhc
 
 
 # Approximant names ###########################################################
