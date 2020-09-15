@@ -18,6 +18,9 @@ This modules provides classes for evaluating multi-dimensional constraints.
 
 from pycbc import transforms
 from pycbc.io import record
+from scipy.spatial import Delaunay
+import numpy
+import h5py
 
 class Constraint(object):
     """ Creates a constraint that evaluates to True if parameters obey
@@ -27,9 +30,24 @@ class Constraint(object):
     required_parameters = []
     def __init__(self, constraint_arg, transforms=None, **kwargs):
         self.constraint_arg = constraint_arg
+        print("constraint_arg = {}".format(self.constraint_arg))
         self.transforms = transforms
         for kwarg in kwargs.keys():
             setattr(self, kwarg, kwargs[kwarg])
+
+        #For supernovae waveforms:
+        print("Constraint section here. Evaluating the convex hull of the principal component coefficents ...")
+        pc_file = '/home/chaitanya.afle/projects/supernovae/supernovae/beta_estimate/data/principal_components_files/principal_components.hdf'
+
+        f = h5py.File(pc_file, 'r')
+        pc_coefficients = numpy.array(f.get('coefficients'))
+        f.close()
+        print("loaded the coefficents from the file.")
+        hull_points = numpy.array([pc_coefficients[:,0], pc_coefficients[:,1]]).T
+        print("Evaluating now!")
+        pc_coeffs_hull = Delaunay(hull_points)
+        self._hull = pc_coeffs_hull
+        print('Done evaluating the hull.')
 
     def __call__(self, params):
         """ Evaluates constraint.
@@ -123,10 +141,24 @@ class EffectiveSpinSpace(Constraint):
 
         return True
 
+class ConvexHull(Constraint):
+    name = "supernovae_convex_hull"
+    required_parameters = ["coeff_0", "coeff_1"]
+
+    def _constraint(self, params):
+        output_array = []
+        for ii in range(len(params["coeff_0"])):
+            point = numpy.array([params["coeff_0"][ii], params["coeff_1"][ii]])
+            #print("point = {}".format(point))
+            output_array.append(self._hull.find_simplex(point)>=0)
+            #print(self._hull.find_simplex(point)>=0)
+        return numpy.array(output_array)
+
 # list of all constraints
 constraints = {
     Constraint.name : Constraint,
     MtotalLT.name : MtotalLT,
     CartesianSpinSpace.name : CartesianSpinSpace,
     EffectiveSpinSpace.name : EffectiveSpinSpace,
+    ConvexHull.name : ConvexHull,
 }

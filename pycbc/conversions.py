@@ -35,6 +35,7 @@ import lal
 import lalsimulation as lalsim
 import h5py
 from pycbc.detector import Detector
+from scipy.spatial import Delaunay
 
 from .coordinates import spherical_to_cartesian as _spherical_to_cartesian
 
@@ -1264,6 +1265,56 @@ def nltides_gw_phase_diff_isco(f_low, f0, amplitude, n, m1, m2):
 # =============================================================================
 #
 
+def test_conversion(coeff_0, coeff_1):
+    # print("coeff 0 = {}".format(coeff_0))
+    # print("coeff 1 = {}".format(coeff_1))
+    print(coeff_0)
+    return coeff_0
+
+
+def get_pc_coeffs(pc_file):
+    f = h5py.File('pc_file', 'r')
+    coeffs = numpy.array(f.get('coefficients'))
+    f.close()
+    print("coeffs from get_pc_coeffs function = {}".format(coeffs))
+    return coeffs
+
+def get_convex_hull():
+    #print("Evaluating the convex hull of the principal component coefficents ...")
+    pc_file = '/home/chaitanya.afle/projects/supernovae/supernovae/beta_estimate/data/principal_components_files/principal_components.hdf'
+
+    f = h5py.File(pc_file, 'r')
+    pc_coefficients = numpy.array(f.get('coefficients'))
+    f.close()
+    hull_points = numpy.array([pc_coefficients[:,0], pc_coefficients[:,1]]).T
+    pc_coeffs_hull = Delaunay(hull_points)
+    # print('Done evaluating the hull.')
+    return pc_coeffs_hull
+
+
+def within_point_cloud(coeff_0, coeff_1):
+    """Checks whether a point (sample) lies within the 
+    point cloud of the coefficents of tyhe principal components.
+    """
+    pc_file = '/home/chaitanya.afle/projects/supernovae/supernovae/beta_estimate/data/principal_components_files/principal_components.hdf'
+    f = h5py.File(pc_file, 'r')
+    pc_coefficients = numpy.array(f.get('coefficients'))
+    f.close()
+    hull_points = numpy.array([pc_coefficients[:,0], pc_coefficients[:,1]]).T
+    pc_coeffs_hull = Delaunay(hull_points)
+
+    output_list = []
+    for ii in range(len(coeff_0)):
+        point = numpy.array([coeff_0[ii], coeff_1[ii]])
+        # print("point = {}".format(point))
+        output_list.append(float(pc_coeffs_hull.find_simplex(point)>=0))
+        # print(int(pc_coeffs_hull.find_simplex(point)>=0))
+    output_array = numpy.array(output_list)
+    #print(output_array)
+    return output_array
+    # print(float(pc_coeffs_hull.find_simplex(point)>=0))
+    # return float(pc_coeffs_hull.find_simplex(point)>=0)
+
 
 def beta_from_alpha_0_from_pc_file(alpha_0_input, pc_file):
     """Returns the beta value for the corresponding coefficient
@@ -1327,6 +1378,7 @@ __all__ = ['dquadmon_from_lambda', 'lambda_tilde', 'primary_mass',
            'final_spin_from_f0_tau', 'final_mass_from_f0_tau',
            'optimal_dec_from_detector', 'optimal_ra_from_detector',
            'chi_eff_from_spherical', 'chi_p_from_spherical',
-           'nltides_gw_phase_diff_isco', 'beta_from_alpha_0_from_pc_file',
-           'beta_from_alpha_1_from_pc_file',
+           'nltides_gw_phase_diff_isco', 'test_conversion', 
+           'get_pc_coeffs', 'get_convex_hull', 'within_point_cloud', 
+           'beta_from_alpha_0_from_pc_file', 'beta_from_alpha_1_from_pc_file',
           ]

@@ -19,6 +19,7 @@ This modules provides classes and functions for transforming parameters.
 import copy
 import logging
 import numpy
+import h5py
 from six import string_types
 from pycbc import conversions
 from pycbc import coordinates
@@ -1214,6 +1215,63 @@ class Logit(BaseTransform):
         return super(Logit, cls).from_config(cp, section, outputs, skip_opts,
                                              additional_opts)
 
+
+#
+# =============================================================================
+#
+#                             Supernovae Transforms
+#
+# =============================================================================
+#
+
+class CheckConvexHull(BaseTransform):
+    """Checks if the coefficients of a sample are within the convex hull
+    of the point cloud of the coefficients of the waveforms used in 
+    building the principal components."""
+    name = 'within_convex_hull'
+    
+    def __init__(self, principal_components_file):
+        # principal_components_file = '/home/chaitanya.afle/projects/supernovae/supernovae/beta_estimate/data/principal_components_files/principal_components.hdf'
+        # print("principal_components_file = {}".format(principal_components_file))
+        self._prinicipal_components_file = principal_components_file
+        # self._coeff_0_param = parameters.coeff_0
+        # self._coeff_1_param = parameters.coeff_1
+        # self._coeff_2_param = parameters.coeff_2
+        # self._coeff_3_param = parameters.coeff_3
+        self._position = position
+        self._inputs = ['coeff_0', 'coeff_1', 
+                        'coeff_2', 'coeff_3']
+        self._outputs = ['position']
+        f = h5py.File(principal_components_file, 'r')
+        coeffs = numpy.array(f.get('coefficients'))
+        self._coeffs = coeffs
+        f.close()
+        # print(self._coeffs)
+
+        super(CheckConvexHull, self).__init__()
+        
+        
+        def get_convex_hull(self):
+            print("making the hull by reading pc coeffs")
+            self._wf_points = numpy.array([self._coeffs[:,0], self._coeffs[:,1], 
+                                           self._coeffs[:,2], self._coeffs[:,3]]).T
+            hull = Delaunay(self._wf_points)                             
+            print("Hull making done")
+            return hull
+
+        def transform(self, maps):
+            coeff0 = maps['coeff_0']
+            coeff1 = maps['coeff_1']
+            coeff2 = maps['coeff_2']
+            coeff3 = maps['coeff_3']
+
+            sample_point = numpy.array([[coeff0, coeff1, 
+                                         coeff2, coeff3]])
+            self._hull = self.get_convex_hull()
+            out = {self._position: self._hull.find_simplex(sample_point)>=0}
+            return self.format_output(maps, out)
+
+
 #
 # =============================================================================
 #
@@ -1496,6 +1554,7 @@ transforms = {
     CartesianSpinToChiP.name : CartesianSpinToChiP,
     Logit.name : Logit,
     Logistic.name : Logistic,
+    CheckConvexHull.name : CheckConvexHull,
 }
 
 # standard CBC transforms: these are transforms that do not require input

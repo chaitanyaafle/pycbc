@@ -21,6 +21,7 @@ from ConfigParser import NoSectionError, NoOptionError
 
 import numpy
 import h5py
+from scipy.spatial import Delaunay
 
 from pycbc import filter as pyfilter
 from pycbc.waveform import NoWaveformError
@@ -217,7 +218,8 @@ class GaussianNoise(BaseDataModel):
 
     def __init__(self, variable_params, data, low_frequency_cutoff, psds=None,
                  high_frequency_cutoff=None, norm=None, static_params=None, 
-                 principal_components=None, **kwargs):
+                 principal_components=None, pc_coefficients=None, pc_coeffs_hull=None, 
+                 **kwargs):
         # set up the boiler-plate attributes
         super(GaussianNoise, self).__init__(variable_params, data,
                                             static_params=static_params,
@@ -257,6 +259,9 @@ class GaussianNoise(BaseDataModel):
             numpy.seterr(**numpysettings)
         # For supernovae waveforms
         self.principal_components = principal_components
+        self.pc_coefficients = pc_coefficients
+        self.pc_coeffs_hull = pc_coeffs_hull
+        print("pc_coeffs_hull = {}".format(self.pc_coeffs_hull))
         # whiten  the data
         for det in self._data:
             self._data[det][kmin:kmax] *= self._weight[det][kmin:kmax]
@@ -334,6 +339,8 @@ class GaussianNoise(BaseDataModel):
         # Add principal components as parameters for supernovae waveforms
         if self.principal_components is not None:
             params['principal_components'] = self.principal_components
+            params['pc_coefficients'] = self.pc_coefficients
+            params['pc_coeffs_hull'] = self.pc_coeffs_hull
 
         try:
             wfs = self._waveform_generator.generate(**params)
@@ -496,8 +503,14 @@ class GaussianNoise(BaseDataModel):
         if cp.has_option('model', 'principal_components_file'):
             pc_file = h5py.File(cp.get('model', 'principal_components_file'), 'r')
             principal_components = numpy.array(pc_file.get('principal_components'))
+            pc_coefficients = numpy.array(pc_file.get('coefficients'))
             args['principal_components'] = principal_components
-
+            args['pc_coefficients'] = pc_coefficients
+            hull_points = numpy.array([pc_coefficients[:,0], pc_coefficients[:,1], 
+                                       pc_coefficients[:,2], pc_coefficients[:,3]]).T
+            pc_coeffs_hull = Delaunay(hull_points)
+            args['pc_coeffs_hull'] = pc_coeffs_hull
+            pc_file.close()
         # get any other keyword arguments provided in the model section
         ignore_args = ['name', 'low-frequency-cutoff', 
                        'high-frequency-cutoff', 'principal_components_file']
